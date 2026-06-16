@@ -1,0 +1,29 @@
+services:
+  drupal:
+    image: drupal:11-php8.3-apache
+    container_name: bbs_drupal
+    ports:
+      - "8080:80"
+    volumes:
+      - drupal-sites:/var/www/html/sites
+      - ./drupal/profiles/custom/bbs_profile:/var/www/html/profiles/custom/bbs_profile:ro
+      - ./themes/custom/bbs_theme:/var/www/html/themes/custom/bbs_theme:ro
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11.4
+    container_name: bbs_mariadb
+    environment:
+      MARIADB_DATABASE: drupal
+      MARIADB_USER: drupal
+      MARIADB_PASSWORD: drupal
+      MARIADB_ROOT_PASSWORD: drupal_root
+    volumes:
+      - db-data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  drupal-sites:
+  db-data:

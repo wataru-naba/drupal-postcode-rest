@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.body
+    - node.type.bbs_post
+  module:
+    - text
+id: node.bbs_post.body
+field_name: body
+entity_type: node
+bundle: bbs_post
+label: 本文
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  display_summary: false
+field_type: text_with_summary

@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies: {  }
+name: '掲示板投稿'
+type: bbs_post
+description: '簡易掲示板に表示する投稿です。'
+help: ''
+new_revision: false
+preview_mode: 1
+display_submitted: true

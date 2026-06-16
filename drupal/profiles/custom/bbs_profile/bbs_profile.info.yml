@@ -1,0 +1,34 @@
+name: 'BBS Learning Profile'
+type: profile
+description: 'Installs a Drupal Core-only bulletin board for Entity, Field, View, and Theme learning.'
+core_version_requirement: ^11
+install:
+  - automated_cron
+  - block
+  - breakpoint
+  - ckeditor5
+  - config
+  - contextual
+  - dynamic_page_cache
+  - editor
+  - field
+  - field_ui
+  - file
+  - filter
+  - help
+  - menu_link_content
+  - menu_ui
+  - node
+  - options
+  - page_cache
+  - path
+  - system
+  - text
+  - toolbar
+  - user
+  - views
+  - views_ui
+themes:
+  - claro
+  - olivero
+  - bbs_theme
