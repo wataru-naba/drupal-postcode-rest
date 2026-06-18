@@ -1,0 +1,6 @@
+# Drupal に、このディレクトリがカスタムモジュールであることを知らせるファイルです。
+name: 'Postcode API'
+type: module
+description: '郵便番号検索APIの学習用に、郵便番号マスタテーブルを提供します。'
+package: Custom
+core_version_requirement: ^11

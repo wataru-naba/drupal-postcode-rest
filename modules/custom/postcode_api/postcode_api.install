@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @file
+ * Postcode API モジュールのインストール時処理とDBスキーマ定義。
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * Drupal はモジュール有効化時にこの hook を呼び出します。
+ * 返したスキーマ配列は Drupal の Database API によって実テーブルに変換されます。
+ */
+function postcode_api_schema(): array {
+  return [
+    'postcode_master' => [
+      // KEN_ALL_ROME.CSV から取り込んだ郵便番号データを UTF-8 文字列として保存します。
+      'description' => 'KEN_ALL_ROME.CSV から取り込んだ郵便番号マスタデータを保存します。',
+      'fields' => [
+        'zipcode' => [
+          'description' => 'ハイフンなし7桁の郵便番号。',
+          'type' => 'varchar',
+          'length' => 7,
+          'not null' => TRUE,
+        ],
+        'prefecture' => [
+          'description' => '都道府県名。',
+          'type' => 'varchar',
+          'length' => 50,
+          'not null' => TRUE,
+        ],
+        'city' => [
+          'description' => '市区町村名。',
+          'type' => 'varchar',
+          'length' => 100,
+          'not null' => TRUE,
+        ],
+        'town' => [
+          'description' => '町域名。',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ],
+      ],
+      // zipcode を主キーにして、郵便番号ごとに1行として扱います。
+      'primary key' => ['zipcode'],
+    ],
+  ];
+}
