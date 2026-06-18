@@ -1,0 +1,10 @@
+# このファイルでは、Drupal のサービスコンテナに登録するクラスを定義します。
+services:
+  postcode_api.commands:
+    class: Drupal\postcode_api\Drush\Commands\PostcodeCommands
+    # @database は Drupal Core が提供する DB 接続サービスです。
+    # コンストラクタに渡すことで、クラス内で直接 \Drupal::database() を呼ばずに済みます。
+    arguments: ['@database']
+    tags:
+      # このタグを付けると、Drush がこのサービスを Drush コマンドとして認識します。
+      - { name: drush.command }
