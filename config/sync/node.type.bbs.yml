@@ -1,0 +1,18 @@
+uuid: 3d5221d2-b40b-4d9a-bdac-4248ef92a406
+langcode: ja
+status: true
+dependencies:
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus:
+      - main
+    parent: 'main:'
+name: bbs
+type: bbs
+description: 掲示板投稿
+help: null
+new_revision: true
+preview_mode: 2
+display_submitted: true

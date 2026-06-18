@@ -5,9 +5,10 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - drupal-sites:/var/www/html/sites
-      - ./drupal/profiles/custom/bbs_profile:/var/www/html/profiles/custom/bbs_profile:ro
-      - ./themes/custom/bbs_theme:/var/www/html/themes/custom/bbs_theme:ro
+      - drupal-sites:/opt/drupal/web/sites
+      - ./drupal/profiles/custom/bbs_profile:/opt/drupal/web/profiles/custom/bbs_profile:ro
+      - ./modules/custom/postcode_api:/opt/drupal/web/modules/custom/postcode_api:ro
+      - ./themes/custom/bbs_theme:/opt/drupal/web/themes/custom/bbs_theme:ro
     depends_on:
       - db
     restart: unless-stopped
@@ -15,6 +16,8 @@ services:
   db:
     image: mariadb:11.4
     container_name: bbs_mariadb
+    ports:
+      - "3307:3306"
     environment:
       MARIADB_DATABASE: drupal
       MARIADB_USER: drupal

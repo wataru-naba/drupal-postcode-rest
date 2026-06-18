@@ -1,0 +1,11 @@
+uuid: 1691eebd-d4f1-4456-b900-cd212da5c38e
+langcode: ja
+status: true
+dependencies:
+  config:
+    - node.type.bbs
+id: node.bbs
+target_entity_type_id: node
+target_bundle: bbs
+default_langcode: site_default
+language_alterable: false

@@ -1,0 +1,15 @@
+_core:
+  default_config_hash: ijfbzDTN4CbE7Sr-6ubWzy_t1vH4OtU1doNCLssVz-4
+langcode: ja
+uuid: 233031ae-748b-459f-81f5-498df1f58c04
+name: 'Drupal BBS'
+mail: support.yash@hyuga.jp
+slogan: ''
+page:
+  403: ''
+  404: ''
+  front: /node
+admin_compact_mode: false
+weight_select_max: 100
+default_langcode: ja
+mail_notification: null

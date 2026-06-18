@@ -1,0 +1,13 @@
+uuid: 3d77d6cd-32f0-4173-bf22-4886216ad491
+langcode: ja
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: i0snV8Wj--OkRW12UdachUiYiz3FbeMwHu_pZYfzKLc
+name: 基本ページ
+type: page
+description: '「About us」のような、あまり更新されない内容の場合は <em>基本ページ</em> を使ってください。'
+help: null
+new_revision: true
+preview_mode: 1
+display_submitted: false

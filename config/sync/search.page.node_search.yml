@@ -1,0 +1,15 @@
+uuid: 1677b97e-51f8-433e-ae7d-a0279048dfef
+langcode: ja
+status: true
+dependencies:
+  module:
+    - node
+_core:
+  default_config_hash: 97tvtzGOa8_flb22CzSjgtm_YkiGMHvEBO-6q2K9V_U
+id: node_search
+label: コンテンツ
+path: node
+weight: -10
+plugin: node_search
+configuration:
+  rankings: {  }

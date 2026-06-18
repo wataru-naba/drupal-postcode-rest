@@ -1,0 +1,13 @@
+uuid: eb9d0199-218f-4e87-968d-34876bfb56d4
+langcode: ja
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: Fe3N1uqaAyyKJbVkqT-btXy3t98puW8GCRD822xjl10
+name: 記事
+type: article
+description: ニュースやプレスリリース、ブログのような時系列が重要なコンテンツには<em>記事</em>を使ってください。
+help: null
+new_revision: true
+preview_mode: 1
+display_submitted: true

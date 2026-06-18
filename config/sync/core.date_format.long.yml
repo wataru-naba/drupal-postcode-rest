@@ -1,0 +1,10 @@
+uuid: 4f3dbd32-6333-4ff9-b823-05da3e63ed89
+langcode: ja
+status: true
+dependencies: {  }
+_core:
+  default_config_hash: 5B4_r5Vd0_9UaJwtAC5yFCm9-k8NNvp1xiQNhFFkknU
+id: long
+label: デフォルトの長い日付
+locked: false
+pattern: 'l, j F Y - H:i'
