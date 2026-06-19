@@ -1,5 +1,11 @@
 # このファイルでは、Drupal のサービスコンテナに登録するクラスを定義します。
 services:
+  postcode_api.postcode_service:
+    class: Drupal\postcode_api\Service\PostcodeService
+    # @database は Drupal Core が提供する DB 接続サービスです。
+    # Controller はこのサービスを経由し、直接 DB に触らない構成にします。
+    arguments: ['@database']
+
   postcode_api.commands:
     class: Drupal\postcode_api\Drush\Commands\PostcodeCommands
     # @database は Drupal Core が提供する DB 接続サービスです。

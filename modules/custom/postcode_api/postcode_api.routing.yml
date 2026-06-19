@@ -1,0 +1,49 @@
+# 郵便番号 API の URL と Controller メソッドの対応を定義します。
+# すべて GET のみ許可します。
+
+postcode_api.zipcode:
+  path: '/api/zipcodes/{zipcode}'
+  defaults:
+    _controller: '\Drupal\postcode_api\Controller\PostcodeController::getByZipcode'
+  requirements:
+    _permission: 'access content'
+    zipcode: '\d{7}'
+  methods: [GET]
+
+postcode_api.prefectures:
+  path: '/api/prefectures'
+  defaults:
+    _controller: '\Drupal\postcode_api\Controller\PostcodeController::getPrefectures'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+postcode_api.cities:
+  path: '/api/prefectures/{prefecture}/cities'
+  defaults:
+    _controller: '\Drupal\postcode_api\Controller\PostcodeController::getCities'
+  requirements:
+    _permission: 'access content'
+    prefecture: '[^/]+'
+  methods: [GET]
+
+postcode_api.towns:
+  path: '/api/prefectures/{prefecture}/cities/{city}/towns'
+  defaults:
+    _controller: '\Drupal\postcode_api\Controller\PostcodeController::getTowns'
+  requirements:
+    _permission: 'access content'
+    prefecture: '[^/]+'
+    city: '[^/]+'
+  methods: [GET]
+
+postcode_api.zipcodes:
+  path: '/api/prefectures/{prefecture}/cities/{city}/towns/{town}/zipcodes'
+  defaults:
+    _controller: '\Drupal\postcode_api\Controller\PostcodeController::getZipcodes'
+  requirements:
+    _permission: 'access content'
+    prefecture: '[^/]+'
+    city: '[^/]+'
+    town: '[^/]+'
+  methods: [GET]
