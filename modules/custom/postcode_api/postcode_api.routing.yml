@@ -47,3 +47,11 @@ postcode_api.zipcodes:
     city: '[^/]+'
     town: '[^/]+'
   methods: [GET]
+
+postcode_api.admin:
+  path: '/admin/postcode'
+  defaults:
+    _controller: '\Drupal\postcode_api\Controller\PostcodeAdminController::index'
+    _title: 'Postcode Master'
+  requirements:
+    _permission: 'administer site configuration'

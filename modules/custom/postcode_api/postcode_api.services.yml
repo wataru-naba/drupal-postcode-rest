@@ -3,8 +3,9 @@ services:
   postcode_api.postcode_service:
     class: Drupal\postcode_api\Service\PostcodeService
     # @database は Drupal Core が提供する DB 接続サービスです。
+    # @pager.parameters は URL の ?page= から現在ページを読み取るサービスです。
     # Controller はこのサービスを経由し、直接 DB に触らない構成にします。
-    arguments: ['@database']
+    arguments: ['@database', '@pager.parameters']
 
   postcode_api.commands:
     class: Drupal\postcode_api\Drush\Commands\PostcodeCommands

@@ -1,0 +1,7 @@
+# 管理メニューに「Postcode Master」へのリンクを追加します。
+postcode_api.admin:
+  title: 'Postcode Master'
+  description: '郵便番号マスタを検索・確認します。'
+  route_name: postcode_api.admin
+  parent: system.admin_config_system
+  weight: 100
