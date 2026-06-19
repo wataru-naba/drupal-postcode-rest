@@ -1,7 +1,7 @@
-# 管理メニューに「Postcode Master」へのリンクを追加します。
+# 管理メニューに Entity API の「Postcode Master」一覧リンクを追加します。
 postcode_api.admin:
   title: 'Postcode Master'
-  description: '郵便番号マスタを検索・確認します。'
-  route_name: postcode_api.admin
-  parent: system.admin_config_system
+  description: '郵便番号マスタ Entity の一覧を確認します。'
+  route_name: entity.postcode_master.collection
+  parent: system.admin_content
   weight: 100

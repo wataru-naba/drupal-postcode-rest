@@ -1,0 +1,4 @@
+administer postcode master:
+  title: 'Administer postcode master'
+  description: 'Create, view, update, and delete Postcode Master entities.'
+  restrict access: true
