@@ -47,3 +47,131 @@ function postcode_api_schema(): array {
     ],
   ];
 }
+
+/**
+ * Registers the Postcode Master entity definition for the existing table.
+ */
+function postcode_api_update_11001(): void {
+  $entity_type_id = 'postcode_master';
+  $table_name = 'postcode_master';
+  $required_fields = [
+    'zipcode',
+    'prefecture',
+    'city',
+    'town',
+  ];
+
+  $schema = \Drupal::database()->schema();
+  if ($schema->tableExists($table_name)) {
+    foreach ($required_fields as $field_name) {
+      if (!$schema->fieldExists($table_name, $field_name)) {
+        throw new \RuntimeException(sprintf('The %s table is missing the required %s field.', $table_name, $field_name));
+      }
+    }
+
+    $entity_type_manager = \Drupal::entityTypeManager();
+    $entity_field_manager = \Drupal::service('entity_field.manager');
+    $last_installed_schema_repository = \Drupal::service('entity.last_installed_schema.repository');
+
+    $entity_type = $entity_type_manager->getDefinition($entity_type_id);
+    $field_storage_definitions = $entity_field_manager->getFieldStorageDefinitions($entity_type_id);
+
+    $last_installed_schema_repository->setLastInstalledDefinition($entity_type);
+    $last_installed_schema_repository->setLastInstalledFieldStorageDefinitions($entity_type_id, $field_storage_definitions);
+
+    $entity_type_manager->clearCachedDefinitions();
+    $entity_field_manager->clearCachedFieldDefinitions();
+    \Drupal::service('router.builder')->setRebuildNeeded();
+
+    return;
+  }
+
+  $entity_definition_update_manager = \Drupal::service('entity.definition_update_manager');
+  $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
+  $field_storage_definitions = \Drupal::service('entity_field.manager')->getFieldStorageDefinitions($entity_type_id);
+  $entity_definition_update_manager->installFieldableEntityType($entity_type, $field_storage_definitions);
+}
+
+/**
+ * Installs the Postcode Master entity schema while preserving existing data.
+ */
+function postcode_api_update_11002(): void {
+  $entity_type_id = 'postcode_master';
+  $table_name = 'postcode_master';
+  $backup_table_name = 'postcode_master_pre_entity_11002';
+  $fields = [
+    'zipcode',
+    'prefecture',
+    'city',
+    'town',
+  ];
+
+  $database = \Drupal::database();
+  $schema = $database->schema();
+  $renamed_existing_table = FALSE;
+
+  if ($schema->tableExists($table_name) && !$schema->tableExists($backup_table_name)) {
+    foreach ($fields as $field_name) {
+      if (!$schema->fieldExists($table_name, $field_name)) {
+        throw new \RuntimeException(sprintf('The %s table is missing the required %s field.', $table_name, $field_name));
+      }
+    }
+
+    $schema->renameTable($table_name, $backup_table_name);
+    $renamed_existing_table = TRUE;
+  }
+
+  $entity_type_manager = \Drupal::entityTypeManager();
+  $entity_field_manager = \Drupal::service('entity_field.manager');
+  $last_installed_schema_repository = \Drupal::service('entity.last_installed_schema.repository');
+  $entity_definition_update_manager = \Drupal::service('entity.definition_update_manager');
+
+  $entity_type_manager->clearCachedDefinitions();
+  $entity_field_manager->clearCachedFieldDefinitions();
+
+  $entity_type = $entity_type_manager->getDefinition($entity_type_id);
+  $field_storage_definitions = $entity_field_manager->getFieldStorageDefinitions($entity_type_id);
+
+  $last_installed_schema_repository->deleteLastInstalledDefinition($entity_type_id);
+  $last_installed_schema_repository->setLastInstalledFieldStorageDefinitions($entity_type_id, []);
+
+  if ($renamed_existing_table || !$schema->tableExists($table_name)) {
+    $entity_definition_update_manager->installFieldableEntityType($entity_type, $field_storage_definitions);
+  }
+  else {
+    $last_installed_schema_repository->setLastInstalledDefinition($entity_type);
+    $last_installed_schema_repository->setLastInstalledFieldStorageDefinitions($entity_type_id, $field_storage_definitions);
+  }
+
+  if ($schema->tableExists($backup_table_name)) {
+    foreach ($fields as $field_name) {
+      if (!$schema->fieldExists($table_name, $field_name)) {
+        throw new \RuntimeException(sprintf('The installed %s table is missing the required %s field.', $table_name, $field_name));
+      }
+    }
+
+    $database->delete($table_name)->execute();
+
+    $records = $database->select($backup_table_name, 'pm')
+      ->fields('pm', $fields)
+      ->execute();
+
+    foreach ($records as $record) {
+      $database->merge($table_name)
+        ->key('zipcode', $record->zipcode)
+        ->fields([
+          'zipcode' => $record->zipcode,
+          'prefecture' => $record->prefecture,
+          'city' => $record->city,
+          'town' => $record->town,
+        ])
+        ->execute();
+    }
+
+    $schema->dropTable($backup_table_name);
+  }
+
+  $entity_type_manager->clearCachedDefinitions();
+  $entity_field_manager->clearCachedFieldDefinitions();
+  \Drupal::service('router.builder')->setRebuildNeeded();
+}

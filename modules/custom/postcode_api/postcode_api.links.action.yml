@@ -1,0 +1,5 @@
+entity.postcode_master.add_form:
+  route_name: entity.postcode_master.add_form
+  title: 'Add Postcode Master'
+  appears_on:
+    - entity.postcode_master.collection

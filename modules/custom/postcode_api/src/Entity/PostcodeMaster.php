@@ -8,6 +8,8 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\Routing\AdminHtmlRouteProvider;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\postcode_api\Form\PostcodeMasterDeleteForm;
+use Drupal\postcode_api\Form\PostcodeMasterForm;
 use Drupal\postcode_api\PostcodeMasterAccessControlHandler;
 use Drupal\postcode_api\PostcodeMasterInterface;
 use Drupal\postcode_api\PostcodeMasterListBuilder;
@@ -24,6 +26,11 @@ use Drupal\postcode_api\PostcodeMasterListBuilder;
   handlers: [
     'list_builder' => PostcodeMasterListBuilder::class,
     'access' => PostcodeMasterAccessControlHandler::class,
+    'form' => [
+      'add' => PostcodeMasterForm::class,
+      'edit' => PostcodeMasterForm::class,
+      'delete' => PostcodeMasterDeleteForm::class,
+    ],
     'route_provider' => [
       'html' => AdminHtmlRouteProvider::class,
     ],
@@ -36,6 +43,9 @@ use Drupal\postcode_api\PostcodeMasterListBuilder;
   ],
   links: [
     'collection' => '/admin/content/postcode-master',
+    'add-form' => '/admin/content/postcode-master/add',
+    'edit-form' => '/admin/content/postcode-master/{postcode_master}/edit',
+    'delete-form' => '/admin/content/postcode-master/{postcode_master}/delete',
   ],
 )]
 class PostcodeMaster extends ContentEntityBase implements PostcodeMasterInterface {
