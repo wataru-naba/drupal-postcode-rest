@@ -7,6 +7,7 @@ use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Pager\PagerManagerInterface;
 use Drupal\Core\Utility\TableSort;
 use Drupal\postcode_api\Form\PostcodeSearchForm;
+use Drupal\postcode_api\PostcodeMasterInterface;
 use Drupal\postcode_api\Service\PostcodeService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
  *
  * Controller はリクエストから検索条件とソート条件を取り出し、
  * Service の結果を Drupal の Render Array に変換するだけにします。
- * DB アクセスは PostcodeService に集約します。
+ * EntityStorage を使った取得処理は PostcodeService に集約します。
  */
 class PostcodeAdminController extends ControllerBase {
 
@@ -168,7 +169,7 @@ class PostcodeAdminController extends ControllerBase {
   /**
    * Drupal 標準 TableSort に対応したテーブルヘッダーを作ります。
    *
-   * field に DB カラム名を設定すると、TableSort がクリックされた列を
+   * field に Entity field 名を設定すると、TableSort がクリックされた列を
    * 判定し、Service に渡すソート対象として利用できます。
    *
    * @return array
@@ -197,7 +198,7 @@ class PostcodeAdminController extends ControllerBase {
   }
 
   /**
-   * Service から受け取った配列をテーブル行の Render Array に変換します。
+   * Service から受け取った Entity をテーブル行の Render Array に変換します。
    *
    * @param array $postcodes
    *   PostcodeService::findAll() の結果。
@@ -209,25 +210,29 @@ class PostcodeAdminController extends ControllerBase {
     $rows = [];
 
     foreach ($postcodes as $postcode) {
+      if (!$postcode instanceof PostcodeMasterInterface) {
+        continue;
+      }
+
       $rows[] = [
         'zipcode' => [
           'data' => [
-            '#plain_text' => (string) ($postcode['zipcode'] ?? ''),
+            '#plain_text' => $postcode->getZipcode(),
           ],
         ],
         'prefecture' => [
           'data' => [
-            '#plain_text' => (string) ($postcode['prefecture'] ?? ''),
+            '#plain_text' => $postcode->getPrefecture(),
           ],
         ],
         'city' => [
           'data' => [
-            '#plain_text' => (string) ($postcode['city'] ?? ''),
+            '#plain_text' => $postcode->getCity(),
           ],
         ],
         'town' => [
           'data' => [
-            '#plain_text' => (string) ($postcode['town'] ?? ''),
+            '#plain_text' => $postcode->getTown(),
           ],
         ],
       ];

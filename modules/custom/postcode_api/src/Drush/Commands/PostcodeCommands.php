@@ -2,7 +2,10 @@
 
 namespace Drupal\postcode_api\Drush\Commands;
 
-use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\postcode_api\Entity\PostcodeMaster;
+use Drupal\postcode_api\PostcodeMasterInterface;
 use Drush\Attributes as CLI;
 use Drush\Commands\AutowireTrait;
 use Drush\Commands\DrushCommands;
@@ -15,22 +18,21 @@ class PostcodeCommands extends DrushCommands {
   use AutowireTrait;
 
   /**
-   * DB 接続サービス。
+   * Postcode Master entity storage.
    *
-   * Drupal Database API を使うことで、DB プレフィックスが設定されていても
-   * 論理テーブル名 postcode_master のまま安全にアクセスできます。
+   * @var \Drupal\Core\Entity\EntityStorageInterface
    */
-  protected Connection $database;
+  protected EntityStorageInterface $postcodeStorage;
 
   /**
    * PostcodeCommands のコンストラクタ。
    *
-   * @param \Drupal\Core\Database\Connection $database
-   *   Drupal の DB 接続サービス。Drush の AutowireTrait によって注入されます。
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   Entity type manager.
    */
-  public function __construct(Connection $database) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager) {
     parent::__construct();
-    $this->database = $database;
+    $this->postcodeStorage = $entity_type_manager->getStorage('postcode_master');
   }
 
   /**
@@ -106,16 +108,23 @@ class PostcodeCommands extends DrushCommands {
           continue;
         }
 
-        // merge() は Drupal Database API の upsert です。
-        // key() で指定した zipcode が存在すれば UPDATE、存在しなければ INSERT します。
-        $this->database->merge('postcode_master')
-          ->key('zipcode', $zipcode)
-          ->fields([
+        $postcode = $this->loadExistingPostcode($zipcode);
+        if ($postcode === NULL) {
+          $postcode = PostcodeMaster::create([
+            'zipcode' => $zipcode,
             'prefecture' => $prefecture,
             'city' => $city,
             'town' => $town,
-          ])
-          ->execute();
+          ]);
+        }
+        else {
+          $postcode
+            ->setPrefecture($prefecture)
+            ->setCity($city)
+            ->setTown($town);
+        }
+
+        $postcode->save();
 
         $imported++;
       }
@@ -132,6 +141,20 @@ class PostcodeCommands extends DrushCommands {
     }
 
     return self::EXIT_SUCCESS;
+  }
+
+  /**
+   * Loads an existing Postcode Master entity.
+   *
+   * @param string $zipcode
+   *   The zipcode.
+   *
+   * @return \Drupal\postcode_api\PostcodeMasterInterface|null
+   *   The loaded entity, or NULL when it does not exist.
+   */
+  protected function loadExistingPostcode(string $zipcode): ?PostcodeMasterInterface {
+    $entity = $this->postcodeStorage->load($zipcode);
+    return $entity instanceof PostcodeMasterInterface ? $entity : NULL;
   }
 
   /**
@@ -163,8 +186,8 @@ class PostcodeCommands extends DrushCommands {
       return FALSE;
     }
 
-    if (strlen($zipcode) > 7) {
-      $this->logger()->warning(sprintf('%d行目は郵便番号が7文字を超えるためスキップしました。', $line_number));
+    if (!preg_match('/^\d{7}$/', $zipcode)) {
+      $this->logger()->warning(sprintf('%d行目は郵便番号が7桁の数字ではないためスキップしました。', $line_number));
       return FALSE;
     }
 

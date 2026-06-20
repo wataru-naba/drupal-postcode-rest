@@ -2,30 +2,24 @@
 
 namespace Drupal\postcode_api\Service;
 
-use Drupal\Core\Database\Connection;
-use Drupal\Core\Database\Query\SelectInterface;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\Query\QueryInterface;
 use Drupal\Core\Pager\PagerParametersInterface;
+use Drupal\postcode_api\PostcodeMasterInterface;
 
 /**
- * postcode_master テーブルから郵便番号データを取得するサービス。
+ * Provides postcode data through the Postcode Master entity storage.
  *
- * Controller から Database API を直接呼ばず、このクラスに DB アクセスを集約します。
+ * Controller から EntityStorage を直接呼ばず、このクラスに取得処理を集約します。
  */
 class PostcodeService {
 
   /**
-   * 郵便番号マスタの論理テーブル名。
-   *
-   * 実 DB で drupal_postcode_master のようなプレフィックス付きテーブルに
-   * なっていても、Database API には論理名 postcode_master を渡します。
-   */
-  private const TABLE = 'postcode_master';
-
-  /**
    * 管理画面で表示・検索・ソートに使うカラム。
    *
-   * Service 側でも許可カラムを固定しておくことで、URL から想定外の
-   * ソート項目が渡ってきても Database API に流さないようにします。
+   * Service 側でも許可カラムを固定しておくことで、URL から想定外の値が
+   * 渡ってきても Entity Query に流さないようにします。
    */
   private const COLUMNS = [
     'zipcode',
@@ -35,11 +29,11 @@ class PostcodeService {
   ];
 
   /**
-   * Drupal の DB 接続サービス。
+   * Postcode Master entity storage.
    *
-   * @var \Drupal\Core\Database\Connection
+   * @var \Drupal\Core\Entity\EntityStorageInterface
    */
-  protected Connection $database;
+  protected EntityStorageInterface $postcodeStorage;
 
   /**
    * 現在の Drupal Pager ページ番号を取得するサービス。
@@ -51,13 +45,13 @@ class PostcodeService {
   /**
    * PostcodeService のコンストラクタ。
    *
-   * @param \Drupal\Core\Database\Connection $database
-   *   サービスコンテナから注入される Database Connection。
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   Entity type manager.
    * @param \Drupal\Core\Pager\PagerParametersInterface $pager_parameters
    *   URL の ?page= から現在ページを取得するサービス。
    */
-  public function __construct(Connection $database, PagerParametersInterface $pager_parameters) {
-    $this->database = $database;
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, PagerParametersInterface $pager_parameters) {
+    $this->postcodeStorage = $entity_type_manager->getStorage('postcode_master');
     $this->pagerParameters = $pager_parameters;
   }
 
@@ -74,8 +68,8 @@ class PostcodeService {
    * @param int $limit
    *   1ページあたりの取得件数。
    *
-   * @return array
-   *   郵便番号マスタの行配列。
+   * @return \Drupal\postcode_api\PostcodeMasterInterface[]
+   *   Postcode Master entities.
    */
   public function findAll(
     array $filters = [],
@@ -92,13 +86,11 @@ class PostcodeService {
     $page = max(0, $this->pagerParameters->findPage());
     $offset = $page * $limit;
 
-    $query = $this->database->select(self::TABLE, 'pm');
-    $query->fields('pm', self::COLUMNS);
-    $this->applyFilters($query, $filters);
-    $query->orderBy($sort, $direction);
+    $query = $this->buildQuery($filters);
+    $query->sort($sort, $direction);
     $query->range($offset, $limit);
 
-    return $query->execute()->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    return $this->loadPostcodes($query->execute());
   }
 
   /**
@@ -114,11 +106,7 @@ class PostcodeService {
    *   検索条件に一致する総件数。
    */
   public function countAll(array $filters = []): int {
-    $query = $this->database->select(self::TABLE, 'pm');
-    $query->addExpression('COUNT(*)');
-    $this->applyFilters($query, $filters);
-
-    return (int) $query->execute()->fetchField();
+    return (int) $this->buildQuery($filters)->count()->execute();
   }
 
   /**
@@ -127,20 +115,12 @@ class PostcodeService {
    * @param string $zipcode
    *   ハイフンなし7桁の郵便番号。
    *
-   * @return array
-   *   見つかった場合は zipcode/prefecture/city/town を持つ配列。
-   *   見つからない場合は空配列。
+   * @return \Drupal\postcode_api\PostcodeMasterInterface|null
+   *   The Postcode Master entity, or NULL when it does not exist.
    */
-  public function getByZipcode(string $zipcode): array {
-    // select() には実テーブル名ではなく論理テーブル名を指定します。
-    $record = $this->database->select(self::TABLE, 'pm')
-      ->fields('pm', ['zipcode', 'prefecture', 'city', 'town'])
-      ->condition('zipcode', $zipcode)
-      ->range(0, 1)
-      ->execute()
-      ->fetchAssoc();
-
-    return $record ?: [];
+  public function getByZipcode(string $zipcode): ?PostcodeMasterInterface {
+    $entity = $this->postcodeStorage->load($zipcode);
+    return $entity instanceof PostcodeMasterInterface ? $entity : NULL;
   }
 
   /**
@@ -196,29 +176,19 @@ class PostcodeService {
    * @param string $town
    *   町域名。
    *
-   * @return array
-   *   例: [['zipcode' => '0640941']]
+   * @return \Drupal\postcode_api\PostcodeMasterInterface[]
+   *   Matching Postcode Master entities.
    */
   public function getZipcodes(
     string $prefecture,
     string $city,
     string $town,
   ): array {
-    $query = $this->database->select(self::TABLE, 'pm');
-    $query->addField('pm', 'zipcode');
-    $query->condition('prefecture', $prefecture);
-    $query->condition('city', $city);
-    $query->condition('town', $town);
-    $query->orderBy('zipcode', 'ASC');
-
-    $zipcodes = [];
-    foreach ($query->execute()->fetchAll() as $row) {
-      $zipcodes[] = [
-        'zipcode' => $row->zipcode,
-      ];
-    }
-
-    return $zipcodes;
+    return $this->loadByConditions([
+      'prefecture' => $prefecture,
+      'city' => $city,
+      'town' => $town,
+    ], 'zipcode');
   }
 
   /**
@@ -233,48 +203,98 @@ class PostcodeService {
    *   例: [['name' => '北海道']]
    */
   protected function getDistinctNames(string $column, array $conditions = []): array {
-    $query = $this->database->select(self::TABLE, 'pm')->distinct();
-    $query->addField('pm', $column, 'name');
-
-    foreach ($conditions as $field => $value) {
-      $query->condition($field, $value);
-    }
-
-    $query->orderBy($column, 'ASC');
-
     $names = [];
-    foreach ($query->execute()->fetchAll() as $row) {
-      $names[] = [
-        'name' => $row->name,
-      ];
+    foreach ($this->loadByConditions($conditions, $column) as $postcode) {
+      $value = trim((string) $postcode->get($column)->value);
+      if ($value !== '') {
+        $names[$value] = [
+          'name' => $value,
+        ];
+      }
     }
 
-    return $names;
+    ksort($names, SORT_NATURAL);
+    return array_values($names);
   }
 
   /**
-   * 管理画面の検索条件を Select Query に適用します。
+   * Builds an entity query for Postcode Master entities.
    *
-   * @param \Drupal\Core\Database\Query\SelectInterface $query
-   *   条件を追加する Select Query。
    * @param array $filters
    *   検索条件。
+   *
+   * @return \Drupal\Core\Entity\Query\QueryInterface
+   *   The entity query.
    */
-  protected function applyFilters(SelectInterface $query, array $filters): void {
+  protected function buildQuery(array $filters = []): QueryInterface {
+    $query = $this->postcodeStorage->getQuery()
+      ->accessCheck(FALSE);
+
     $keyword = trim((string) ($filters['keyword'] ?? ''));
 
     if ($keyword !== '') {
-      // LIKE 検索では % や _ が特別な意味を持つため、escapeLike() で
-      // ユーザー入力を安全にエスケープしてからワイルドカードを付けます。
-      $like = '%' . $this->database->escapeLike($keyword) . '%';
       $or = $query->orConditionGroup()
-        ->condition('zipcode', $like, 'LIKE')
-        ->condition('prefecture', $like, 'LIKE')
-        ->condition('city', $like, 'LIKE')
-        ->condition('town', $like, 'LIKE');
+        ->condition('zipcode', $keyword, 'CONTAINS')
+        ->condition('prefecture', $keyword, 'CONTAINS')
+        ->condition('city', $keyword, 'CONTAINS')
+        ->condition('town', $keyword, 'CONTAINS');
 
       $query->condition($or);
     }
+
+    return $query;
+  }
+
+  /**
+   * Loads entities matching the given field conditions.
+   *
+   * @param array $conditions
+   *   Conditions keyed by field name.
+   * @param string $sort
+   *   The sort field.
+   *
+   * @return \Drupal\postcode_api\PostcodeMasterInterface[]
+   *   Postcode Master entities.
+   */
+  protected function loadByConditions(array $conditions = [], string $sort = 'zipcode'): array {
+    $query = $this->postcodeStorage->getQuery()
+      ->accessCheck(FALSE);
+
+    foreach ($conditions as $field => $value) {
+      if (in_array($field, self::COLUMNS, TRUE)) {
+        $query->condition($field, $value);
+      }
+    }
+
+    $query->sort($this->normalizeSort($sort), 'ASC');
+
+    return $this->loadPostcodes($query->execute());
+  }
+
+  /**
+   * Loads and filters Postcode Master entities by IDs.
+   *
+   * @param array $ids
+   *   Entity IDs.
+   *
+   * @return \Drupal\postcode_api\PostcodeMasterInterface[]
+   *   Postcode Master entities.
+   */
+  protected function loadPostcodes(array $ids): array {
+    if ($ids === []) {
+      return [];
+    }
+
+    $entities = $this->postcodeStorage->loadMultiple($ids);
+    $postcodes = [];
+
+    foreach ($entities as $entity) {
+      if ($entity instanceof PostcodeMasterInterface) {
+        $postcodes[] = $entity;
+      }
+    }
+
+    return $postcodes;
   }
 
   /**

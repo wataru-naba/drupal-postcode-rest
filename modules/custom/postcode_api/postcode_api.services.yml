@@ -2,16 +2,15 @@
 services:
   postcode_api.postcode_service:
     class: Drupal\postcode_api\Service\PostcodeService
-    # @database は Drupal Core が提供する DB 接続サービスです。
+    # @entity_type.manager から postcode_master の EntityStorage を取得します。
     # @pager.parameters は URL の ?page= から現在ページを読み取るサービスです。
-    # Controller はこのサービスを経由し、直接 DB に触らない構成にします。
-    arguments: ['@database', '@pager.parameters']
+    # Controller はこのサービスを経由し、直接 EntityStorage に触らない構成にします。
+    arguments: ['@entity_type.manager', '@pager.parameters']
 
   postcode_api.commands:
     class: Drupal\postcode_api\Drush\Commands\PostcodeCommands
-    # @database は Drupal Core が提供する DB 接続サービスです。
-    # コンストラクタに渡すことで、クラス内で直接 \Drupal::database() を呼ばずに済みます。
-    arguments: ['@database']
+    # Drush import も Entity API 経由で postcode_master を保存します。
+    arguments: ['@entity_type.manager']
     tags:
       # このタグを付けると、Drush がこのサービスを Drush コマンドとして認識します。
       - { name: drush.command }

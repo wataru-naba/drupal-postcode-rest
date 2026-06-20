@@ -3,6 +3,7 @@
 namespace Drupal\postcode_api\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\postcode_api\PostcodeMasterInterface;
 use Drupal\postcode_api\Service\PostcodeService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -11,8 +12,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 /**
  * 郵便番号検索 REST API の Controller。
  *
- * Controller はリクエストを受け取り、Service の結果を JSON で返すだけにします。
- * DB への問い合わせは PostcodeService に任せます。
+ * Controller はリクエストを受け取り、Service 経由で取得した Entity を JSON に変換します。
  */
 class PostcodeController extends ControllerBase {
 
@@ -51,11 +51,11 @@ class PostcodeController extends ControllerBase {
   public function getByZipcode(string $zipcode): JsonResponse {
     $postcode = $this->postcodeService->getByZipcode($zipcode);
 
-    if ($postcode === []) {
+    if ($postcode === NULL) {
       throw new NotFoundHttpException('指定された郵便番号が見つかりません。');
     }
 
-    return $this->createJsonResponse($postcode);
+    return $this->createJsonResponse($this->buildPostcodeData($postcode));
   }
 
   /**
@@ -105,7 +105,30 @@ class PostcodeController extends ControllerBase {
       throw new NotFoundHttpException('指定された町域が見つかりません。');
     }
 
-    return $this->createJsonResponse($zipcodes);
+    return $this->createJsonResponse(array_map(
+      static fn(PostcodeMasterInterface $postcode): array => [
+        'zipcode' => $postcode->getZipcode(),
+      ],
+      $zipcodes
+    ));
+  }
+
+  /**
+   * Converts a Postcode Master entity to response data.
+   *
+   * @param \Drupal\postcode_api\PostcodeMasterInterface $postcode
+   *   The Postcode Master entity.
+   *
+   * @return array
+   *   Response data.
+   */
+  protected function buildPostcodeData(PostcodeMasterInterface $postcode): array {
+    return [
+      'zipcode' => $postcode->getZipcode(),
+      'prefecture' => $postcode->getPrefecture(),
+      'city' => $postcode->getCity(),
+      'town' => $postcode->getTown(),
+    ];
   }
 
   /**
